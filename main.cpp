@@ -97,57 +97,6 @@ bool getTab(char t[gameBoardSize][gameBoardSize], int & who, char znak1, char zn
     return true;
 }
 
-bool solution(char t[gameBoardSize][gameBoardSize]){
-    int bz=0;
-    bool x, y;
-    bool p1=true, p2=true;
-    for(int i=0; i<gameBoardSize; i++){
-        x=true; y=true;
-        for(int j=1; j<gameBoardSize; j++){
-            if(t[i][j]!=t[i][j-1])
-                x=false;
-            if(t[j][i]!=t[j-1][i])
-                y=false;
-            if(t[i][j]==' '){
-                bz++;
-                x=false;
-            }
-            if(t[j][i]==' ')
-                y=false;
-        }
-        if(x){
-            cout<< endl << "Wygrywa: "<<t[i][0] << endl;
-            return true;
-        }
-        if(y){
-            cout<< endl << "Wygrywa: "<<t[0][i] << endl;
-            return true;
-        }
-        if(i<gameBoardSize - 1){
-            if(t[i][i]!=t[i+1][i+1] || t[i][i]==' ')
-                p1=false;
-            if(t[i][gameBoardSize - 1 -i]!=t[i+1][1-i] || t[i][gameBoardSize - 1 -i]==' ')
-                p2=false;
-        }
-    }
-
-    for(int i=0; i<gameBoardSize; i++)
-        if(t[i][0]==' ')
-            bz++;
-
-    if(bz==0){
-        cout<< endl <<"Remis. Plansza jest juz pelna." << endl;
-        return true;
-    }else if(p1){
-        cout<< endl << "Wygrywa: "<<t[0][0] << endl;
-        return true;
-    }else if(p2){
-        cout<< endl << "Wygrywa: "<<t[0][2] << endl;
-        return true;
-    }
-    return false;
-}
-
 bool putInCorner(char t[gameBoardSize][gameBoardSize]){
     bool moveMade = false;
     if(t[0][0] == 'O'){
@@ -203,6 +152,53 @@ bool putInCorner(char t[gameBoardSize][gameBoardSize]){
         }
     }
     return moveMade;
+}
+
+bool checkGameBoard(char t[gameBoardSize][gameBoardSize]){
+    char cross = 'X', circle = 'O';
+    int blank = 0;
+    for (int i = 0; i < gameBoardSize; ++i) {
+        int verticalCross = 0, horizontalCross = 0, diagonalCross = 0;
+        int verticalCircle = 0, horizontalCircle = 0, diagonalCircle = 0;
+        for (int j = 0; j < gameBoardSize; ++j) {
+            if(t[i][j] == cross){
+                horizontalCross++;
+            }else if(t[i][j] == circle){
+                horizontalCircle++;
+            }else{
+                blank++;
+            }
+
+            if(t[j][i] == cross){
+                verticalCross++;
+            }else if(t[j][i] == circle){
+                verticalCircle++;
+            }else{
+                blank++;
+            }
+        }
+        if(t[i][i] == cross){
+            diagonalCross++;
+        }else if(t[i][i] == circle) {
+            diagonalCircle++;
+        }else{
+            blank++;
+        }
+
+
+        if(verticalCircle == 3 || horizontalCircle == 3 || diagonalCircle == 3) {
+            cout << "Zwyciezca: " << cross << endl;
+            return true;
+        }else if(verticalCross == 3 || horizontalCross == 3 || diagonalCross == 3){
+            cout << "Zwyciezca: " << cross << endl;
+        }
+    }
+    if(blank == 0){
+        cout << "Remis. Plansza jest juz pelna" << endl;
+        return true;
+    }
+
+    return false;
 }
 
 bool tryToFinish(char t[gameBoardSize][gameBoardSize], char character){
@@ -288,47 +284,72 @@ int main(){
     int move = 1;
     bool end = false;
 
+    bool singlePlayer = true;
     int difficultyLevel = 0;
 
-    cout << "Wybierz poziom trudnosci: ";
-    cin >> difficultyLevel;
-
-    bool AI = true;
-
     int temp = 0;
+
+    cout << "Wybierz model rozgrywki" << endl;
+    cout << "Jeden gracz (1)" << endl;
+    cout << "Dwoch graczy (2)" << endl;
+    do {
+        cout << "Wybor: ";
+        cin >> temp;
+        if(temp == 1){
+            singlePlayer = true;
+        }else if(temp == 2){
+            singlePlayer = false;
+        }
+    }while(temp != 1 && temp != 2);
+
+    if(singlePlayer){
+        cout << "Wybierz poziom trudnosci: ";
+        cin >> difficultyLevel;
+    }
+
+    temp = 0;
     int i = 0;
     while(!end) {
-        if (i % 2 == 0) {
-            copyTab(previousMove, tab);
-            if (difficultyLevel == 0) {
-                randomMoves(tab);
-            } else if (difficultyLevel == 1) {
-                if(temp%2 == 0) {
+        if(singlePlayer){
+            if (i % 2 == 0) {
+                copyTab(previousMove, tab);
+                if (difficultyLevel == 0) {
                     randomMoves(tab);
-                }else {
+                } else if (difficultyLevel == 1) {
+                    if(temp%2 == 0) {
+                        randomMoves(tab);
+                    }else {
+                        AdvancedAI(tab, move);
+                    }
+                    temp++;
+                } else if (difficultyLevel == 2) {
                     AdvancedAI(tab, move);
                 }
-                temp++;
-            } else if (difficultyLevel == 2) {
-                AdvancedAI(tab, move);
-            }
-        move++;
-            who += 1;
+                move++;
+                who += 1;
 
-            drawTable(tab);
-            end = solution(tab);
-        }
-        if(i%2 == 1){
-            //Mozliwość wyboru znaków do gry
-            getTab(tab, who, 'O', 'X');
-            if(AI){
                 drawTable(tab);
-                cout << "Ruch komputera (nacisnij dowolny klawisz aby kontynuowac)";
-                getch();
+                if(checkGameBoard(tab)) break;
             }
-            end= solution(tab);
+            i++;
         }
-        i++;
+        if(singlePlayer){
+            if(i%2 == 1){
+                //Mozliwość wyboru znaków do gry
+                getTab(tab, who, 'O', 'X');
+                if(singlePlayer){
+                    drawTable(tab);
+                    cout << "Ruch komputera (nacisnij dowolny klawisz aby kontynuowac)";
+                    getch();
+                }
+                if(checkGameBoard(tab)) break;
+            }
+            i++;
+        }else{
+            getTab(tab, who, 'O', 'X');
+            drawTable(tab);
+            if(checkGameBoard(tab)) break;
+        }
     }
     drawTable(tab);
     return 0;
